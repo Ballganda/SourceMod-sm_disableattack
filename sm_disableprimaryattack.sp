@@ -26,7 +26,7 @@ ConVar g_cvDisableOnGround = null;
 //int m_flNextSecondaryAttack = '\0';
 int m_flNextPrimaryAttack = '\0';
 
-bool ScopeReset = false;
+bool Reset = false;
 
 public void OnPluginStart()
 {
@@ -36,9 +36,9 @@ public void OnPluginStart()
 
 	CreateConVar("sm_disableprimaryattack_version", PLUGIN_VERSION, NAME, FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
-	g_cvEnablePlugin = CreateConVar("sm_disablescope_enable", "1", "sm_disablescope_enable enables the plugin <1|0>");
-	g_cvDisableInAir = CreateConVar("sm_disablescope_inair", "0", "Disable Scope when the player is jumping/off ground <1|0>");
-	g_cvDisableOnGround = CreateConVar("sm_disablescope_onground", "1", "Disable Scope when the player is on ground <1|0>");
+	g_cvEnablePlugin = CreateConVar("sm_disableprimaryattack_enable", "1", "sm_disablescope_enable enables the plugin <1|0>");
+	g_cvDisableInAir = CreateConVar("sm_disableprimaryattack_inair", "0", "Disable Scope when the player is jumping/off ground <1|0>");
+	g_cvDisableOnGround = CreateConVar("sm_disableprimaryattack_onground", "1", "Disable Scope when the player is on ground <1|0>");
 	
 	AutoExecConfig(true, "sm_disableprimaryattack");
 	
@@ -68,47 +68,40 @@ public Action OnPreThink(int client)
 	
 	int activeWeapon;
 	activeWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-	DisablePrimaryAttack(client, ActiveWeapon);
+	if (!IsValidEntity(activeWeapon))
+	{
+		return Plugin_Continue;
 	}
+	
+	DisablePrimaryAttack(client, activeWeapon);
+	
 	return Plugin_Continue;
 }
 
 stock void DisablePrimaryAttack(int client, int entityNumber)
 {
-	if (ScopeReset && !g_cvDisableOnGround.BoolValue && (GetEntityFlags(client) & FL_ONGROUND))
+	if (Reset && !g_cvDisableOnGround.BoolValue && (GetEntityFlags(client) & FL_ONGROUND))
 	{
-		SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() - 1.0);
-		ScopeReset = false;
+		SetEntDataFloat(entityNumber, m_flNextPrimaryAttack, GetGameTime() - 1.0);
+		Reset = false;
 	}
 	
 	if (g_cvDisableOnGround.BoolValue && (GetEntityFlags(client) & FL_ONGROUND))
 	{
-		SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() + 2.0);
-		ScopeReset = true;
-		int fov;
-		GetEntProp(client, Prop_Send, "m_iFOV", fov);
-		if (fov < 90)
-		{
-			SetEntProp(client, Prop_Send, "m_iFOV", 90);
-		}
+		SetEntDataFloat(entityNumber, m_flNextPrimaryAttack, GetGameTime() + 2.0);
+		Reset = true;
 	}
 	
-	if (ScopeReset && !g_cvDisableInAir.BoolValue && !(GetEntityFlags(client) & FL_ONGROUND))
+	if (Reset && !g_cvDisableInAir.BoolValue && !(GetEntityFlags(client) & FL_ONGROUND))
 	{
-		SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() - 1.0);
-		ScopeReset = false;
+		SetEntDataFloat(entityNumber, m_flNextPrimaryAttack, GetGameTime() - 1.0);
+		Reset = false;
 	}
 	
 	if (g_cvDisableInAir.BoolValue && !(GetEntityFlags(client) & FL_ONGROUND))
 	{
-		SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() + 2.0);
-		ScopeReset = true;
-		int fov;
-		GetEntProp(client, Prop_Send, "m_iFOV", fov);
-		if (fov < 90)
-		{
-			SetEntProp(client, Prop_Send, "m_iFOV", 90);
-		}
+		SetEntDataFloat(entityNumber, m_flNextPrimaryAttack, GetGameTime() + 2.0);
+		Reset = true;
 	}
 }
 
@@ -138,8 +131,8 @@ public Action smAbout(int client, int args)
 	PrintToConsole(client, "Plugin Version....: %s", PLUGIN_VERSION);
 	PrintToConsole(client, "Plugin URL........: %s", URL);
 	PrintToConsole(client, "List of cvars: ");
-	PrintToConsole(client, "sm_disablescope_enable <1|0>");
-	PrintToConsole(client, "sm_disablescope_inair <1|0>");
-	PrintToConsole(client, "sm_disablescope_onground <1|0>");
+	PrintToConsole(client, "sm_disableprimaryattack_enable <1|0>");
+	PrintToConsole(client, "sm_disableprimaryattack_inair <1|0>");
+	PrintToConsole(client, "sm_disableprimaryattack_onground <1|0>");
 	return Plugin_Continue;
 }
