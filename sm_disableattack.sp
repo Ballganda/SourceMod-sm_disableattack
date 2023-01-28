@@ -7,7 +7,7 @@
 #define NAME "[CS:S]sm_disableattack"
 #define AUTHOR "BallGanda"
 #define DESCRIPTION "sm_disableattack diabled ability to use primary attack"
-#define PLUGIN_VERSION "0.0.b1"
+#define PLUGIN_VERSION "0.0.b2"
 #define URL "https://github.com/Ballganda/SourceMod-sm_disableattack"
 
 public Plugin myinfo = {
@@ -25,14 +25,8 @@ ConVar g_cvDisableInAir = null;
 ConVar g_cvDisableOnGround = null;
 ConVar g_cvDelayReset = null;
 
-// '\0' is null 
-//int m_flNextPrimaryAttack = '\0';
-//int m_flNextSecondaryAttack = '\0';
-//int m_flTimeWeaponIdle = '\0';
-
-bool ResetPrimary[MAXPLAYERS + 1];
-bool SetPrimary[MAXPLAYERS + 1];
-bool ResetSecondary[MAXPLAYERS + 1];
+bool UnblockPrimary[MAXPLAYERS + 1];
+bool UnblockSecondary[MAXPLAYERS + 1];
 
 public void OnPluginStart()
 {
@@ -50,12 +44,6 @@ public void OnPluginStart()
 	g_cvDelayReset = CreateConVar("sm_disableattack_DelayReset", "0.25", "Delay reset attack float <-1.0|1.0>");
 	
 	AutoExecConfig(true, "sm_disableattack");
-	
-	//Get the offset for m_flNextPrimaryAttack m_flNextPrimaryAttack
-	//m_flNextPrimaryAttack = FindSendPropInfo("CBaseCombatWeapon", "m_flNextPrimaryAttack");
-	//m_flNextSecondaryAttack = FindSendPropInfo("CBaseCombatWeapon", "m_flNextSecondaryAttack");
-	//m_flTimeWeaponIdle = FindSendPropInfo("CBaseCombatWeapon", "m_flTimeWeaponIdle");
-	//m_iShotsFired = FindSendPropInfo("CCSPlayer", "m_iShotsFired");
 
 	for(int i = 1; i <= MaxClients; i++)
 	{
@@ -69,9 +57,8 @@ public void OnPluginStart()
 public void OnClientPutInServer(int client)
 {
 	SDKHook(client, SDKHook_PreThink, OnPreThink);
-	ResetPrimary[client] = false;
-	SetPrimary[client] = true;
-	ResetSecondary[client] = false;
+	UnblockPrimary[client] = false;
+	UnblockSecondary[client] = false;
 }
 
 public Action OnPreThink(int client)
@@ -88,12 +75,6 @@ public Action OnPreThink(int client)
 		return Plugin_Continue;
 	}
 	
-	// if (GetEntProp(activeWeapon, Prop_Send, "m_iClip1") == 30)
-	// {
-		// PrintToChat(client, "reloaded"); //for debug
-		// SetPrimary[client] = true;
-	// }
-	
 	if (g_cvDisablePrimary.BoolValue)
 	{
 		DisablePrimaryAttack(client, activeWeapon);
@@ -101,7 +82,7 @@ public Action OnPreThink(int client)
 	
 	if (g_cvDisableSecondary.BoolValue)
 	{
-		//DisableSecondaryAttack(client, activeWeapon);
+		DisableSecondaryAttack(client, activeWeapon);
 	}
 	
 	return Plugin_Continue;
@@ -110,115 +91,89 @@ public Action OnPreThink(int client)
 stock void DisablePrimaryAttack(int client, int entityNumber)
 {
 	int IsOnGround = (GetEntityFlags(client) & FL_ONGROUND);
-	if (ResetPrimary[client] && !g_cvDisableOnGround.BoolValue && IsOnGround)
+	char attacktype[] = "m_flNextPrimaryAttack";
+	if (UnblockPrimary[client] && !g_cvDisableOnGround.BoolValue && IsOnGround)
 	{
-		ResetPrimaryattack(client, entityNumber);
+		UnblockAttack(client, entityNumber, attacktype[0]);
 	}
 	
-	if (g_cvDisableOnGround.BoolValue && IsOnGround && SetPrimary[client])
+	if (g_cvDisableOnGround.BoolValue && IsOnGround)
 	{
-		SetPrimaryattack(client, entityNumber);
+		Blockattack(client, entityNumber, attacktype[0]);
 	}
 	
-	if (ResetPrimary[client] && !g_cvDisableInAir.BoolValue && !IsOnGround)
+	if (UnblockPrimary[client] && !g_cvDisableInAir.BoolValue && !IsOnGround)
 	{
-		ResetPrimaryattack(client, entityNumber);
+		UnblockAttack(client, entityNumber, attacktype[0]);
 	}
 	
 	if (g_cvDisableInAir.BoolValue && !IsOnGround)
 	{
-		SetPrimaryattack(client, entityNumber);
+		Blockattack(client, entityNumber, attacktype[0]);
 	}
 }
 
-stock Action SetPrimaryattack(int client, int entityNumber)
-{
-	SetEntPropFloat(entityNumber, Prop_Send, "m_flNextPrimaryAttack", GetGameTime() + 2.0);
-	ResetPrimary[client] = true;
-	return Plugin_Continue;
-}
-
-void ResetPrimaryattack(int client, int entityNumber)
-{
-	SetEntPropFloat(entityNumber, Prop_Send, "m_flNextPrimaryAttack", GetGameTime() + g_cvDelayReset.FloatValue);
-	ResetPrimary[client] = false;
-	SetPrimary[client] = true;
-}
-
-//int cnt = 0;
-public Action OnPlayerRunCmd(int client, int& buttons)
+stock void DisableSecondaryAttack(int client, int entityNumber)
 {
 	int IsOnGround = (GetEntityFlags(client) & FL_ONGROUND);
+	char attacktype[] = "m_flNextSecondaryAttack";
 	
-	if ((buttons & IN_RELOAD) && IsOnGround && SetPrimary[client])
+	if (UnblockSecondary[client] && !g_cvDisableOnGround.BoolValue && IsOnGround)
 	{
-		PrintToChat(client, "Force reload"); //for debug
-		buttons &= ~IN_ATTACK;
-		int entityNumber = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-		if (!IsValidEntity(entityNumber))
-		{
-			return Plugin_Continue;
-		}
-		SetEntPropFloat(entityNumber, Prop_Send, "m_flNextPrimaryAttack", GetGameTime() - 1.0);
-		//SetEntProp(int entity, PropType type, const char[] prop, any value, int size = 4, int element = 0)
-		//SetEntProp(client, Prop_Send, m_iShotsFired, 1, int size = 4, int element = 0)
-		//SetEntData(client, m_iShotsFired, 1);
-		
-		buttons |= IN_RELOAD;
-		SetPrimary[client] = false;
-		CreateTimer(0.1, reloadtimersetprimary, client);
-		return Plugin_Changed;
+		UnblockAttack(client, entityNumber, attacktype[0]);
 	}
-	return Plugin_Continue;
+	
+	if (g_cvDisableOnGround.BoolValue && IsOnGround)
+	{
+		Blockattack(client, entityNumber, attacktype[0]);
+	}
+	
+	if (UnblockSecondary[client] && !g_cvDisableInAir.BoolValue && !IsOnGround)
+	{
+		UnblockAttack(client, entityNumber, attacktype[0]);
+	}
+	
+	if (g_cvDisableInAir.BoolValue && !IsOnGround)
+	{
+		Blockattack(client, entityNumber, attacktype[0]);
+	}
 }
 
-public Action reloadtimersetprimary(Handle timer, int client)
+stock void Blockattack(int client, int entityNumber, const char[] attacktype)
 {
-	PrintToChat(client, "reloaded"); //for debug
-	SetPrimary[client] = true;
-	return Plugin_Continue;
+	SetEntPropFloat(entityNumber, Prop_Send, attacktype, GetGameTime() + 2.0);
+	
+	if (StrEqual(attacktype, "m_flNextPrimaryAttack"))
+	{
+		UnblockPrimary[client] = true;
+	}
+	
+	if (StrEqual(attacktype, "m_flNextSecondaryAttack"))
+	{
+		UnblockSecondary[client] = true;
+		int fov;
+		GetEntProp(client, Prop_Send, "m_iFOV", fov);
+		if (fov < 90)
+		{
+			SetEntProp(client, Prop_Send, "m_iFOV", 90);
+		}
+	}
 }
 
-
-
-// stock void DisableSecondaryAttack(int client, int entityNumber)
-// {
-	// if (ResetSecondary[client] && !g_cvDisableOnGround.BoolValue && (GetEntityFlags(client) & FL_ONGROUND))
-	// {
-		// SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() - 1.0);
-		// ResetSecondary[client] = false;
-	// }
+stock void UnblockAttack(int client, int entityNumber, const char[] attacktype)
+{
+	SetEntPropFloat(entityNumber, Prop_Send, attacktype, GetGameTime() + g_cvDelayReset.FloatValue);
 	
-	// if (g_cvDisableOnGround.BoolValue && (GetEntityFlags(client) & FL_ONGROUND))
-	// {
-		// SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() + 2.0);
-		// ResetSecondary[client] = true;
-		// int fov;
-		// GetEntProp(client, Prop_Send, "m_iFOV", fov);
-		// if (fov < 90)
-		// {
-			// SetEntProp(client, Prop_Send, "m_iFOV", 90);
-		// }
-	// }
+	if (StrEqual(attacktype, "m_flNextPrimaryAttack"))
+	{
+		UnblockPrimary[client] = false;
+	}
 	
-	// if (ResetSecondary[client] && !g_cvDisableInAir.BoolValue && !(GetEntityFlags(client) & FL_ONGROUND))
-	// {
-		// SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() - 1.0);
-		// ResetSecondary[client] = false;
-	// }
-	
-	// if (g_cvDisableInAir.BoolValue && !(GetEntityFlags(client) & FL_ONGROUND))
-	// {
-		// SetEntDataFloat(entityNumber, m_flNextSecondaryAttack, GetGameTime() + 2.0);
-		// ResetSecondary[client] = true;
-		// int fov;
-		// GetEntProp(client, Prop_Send, "m_iFOV", fov);
-		// if (fov < 90)
-		// {
-			// SetEntProp(client, Prop_Send, "m_iFOV", 90);
-		// }
-	// }
-// }
+	if (StrEqual(attacktype, "m_flNextSecondaryAttack"))
+	{
+		UnblockSecondary[client] = false;
+	}
+}
 
 void CheckGameVersion()
 {
