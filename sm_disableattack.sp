@@ -7,16 +7,8 @@
 #define NAME "[CS:S]sm_disableattack"
 #define AUTHOR "BallGanda"
 #define DESCRIPTION "sm_disableattack diabled ability to use primary attack"
-#define PLUGIN_VERSION "0.0.b2"
+#define PLUGIN_VERSION "0.0.b3"
 #define URL "https://github.com/Ballganda/SourceMod-sm_disableattack"
-
-public Plugin myinfo = {
-	name = NAME,
-	author = AUTHOR,
-	description = DESCRIPTION,
-	version = PLUGIN_VERSION,
-	url = URL
-}
 
 ConVar g_cvEnablePlugin = null;
 ConVar g_cvDisablePrimary = null;
@@ -36,12 +28,12 @@ public void OnPluginStart()
 
 	CreateConVar("sm_disableattack_version", PLUGIN_VERSION, NAME, FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
-	g_cvEnablePlugin = CreateConVar("sm_disableattack_enable", "1", "sm_disableattack_enable enables the plugin <1|0>");
-	g_cvDisablePrimary = CreateConVar("sm_disableattack_primary", "1", "Disable primary attack <1|0>");
-	g_cvDisableSecondary = CreateConVar("sm_disableattack_Secondary", "1", "Disable secondary <1|0>");
-	g_cvDisableInAir = CreateConVar("sm_disableattack_inair", "0", "Disable attack jumping/off ground <1|0>");
-	g_cvDisableOnGround = CreateConVar("sm_disableattack_onground", "1", "Disable attack on ground <1|0>");
-	g_cvDelayReset = CreateConVar("sm_disableattack_DelayReset", "0.25", "Delay reset attack float <-1.0|1.0>");
+	g_cvEnablePlugin = CreateConVar("sm_disableattack_enable", "1", "sm_disableattack_enable enables the plugin <1|0>", _, true, 0.0, true, 1.0);
+	g_cvDisablePrimary = CreateConVar("sm_disableattack_primary", "1", "Disable primary attack <1|0>", _, true, 0.0, true, 1.0);
+	g_cvDisableSecondary = CreateConVar("sm_disableattack_Secondary", "1", "Disable secondary <1|0>", _, true, 0.0, true, 1.0);
+	g_cvDisableInAir = CreateConVar("sm_disableattack_inair", "0", "Disable attack jumping/off ground <1|0>", _, true, 0.0, true, 1.0);
+	g_cvDisableOnGround = CreateConVar("sm_disableattack_onground", "1", "Disable attack on ground <1|0>", _, true, 0.0, true, 1.0);
+	g_cvDelayReset = CreateConVar("sm_disableattack_DelayReset", "0.25", "Delay reset attack float <-1.0|1.0>", _, true, -1.0, true, 1.0);
 	
 	AutoExecConfig(true, "sm_disableattack");
 
@@ -192,6 +184,14 @@ stock bool IsClientValid(int client)
 	return false;
 }
 
+public Plugin myinfo = {
+	name = NAME,
+	author = AUTHOR,
+	description = DESCRIPTION,
+	version = PLUGIN_VERSION,
+	url = URL
+}
+
 public Action smAbout(int client, int args)
 {
 	PrintToConsole(client, "");
@@ -202,7 +202,10 @@ public Action smAbout(int client, int args)
 	PrintToConsole(client, "Plugin URL........: %s", URL);
 	PrintToConsole(client, "List of cvars: ");
 	PrintToConsole(client, "sm_disableattack_enable <1|0>");
+	PrintToConsole(client, "sm_disableattack_primary <1|0>");
+	PrintToConsole(client, "sm_disableattack_Secondary <1|0>");
 	PrintToConsole(client, "sm_disableattack_inair <1|0>");
 	PrintToConsole(client, "sm_disableattack_onground <1|0>");
+	PrintToConsole(client, "sm_disableattack_DelayReset <-1.0|1.0>");
 	return Plugin_Continue;
 }
