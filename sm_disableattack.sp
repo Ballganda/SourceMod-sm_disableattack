@@ -7,7 +7,7 @@
 #define NAME "[CS:S]sm_disableattack"
 #define AUTHOR "BallGanda"
 #define DESCRIPTION "sm_disableattack diabled ability to use primary attack"
-#define PLUGIN_VERSION "0.0.b3"
+#define PLUGIN_VERSION "0.0.b4"
 #define URL "https://github.com/Ballganda/SourceMod-sm_disableattack"
 
 ConVar g_cvEnablePlugin = null;
@@ -201,6 +201,7 @@ public Action smAbout(int client, int args)
 	PrintToConsole(client, "Plugin Version....: %s", PLUGIN_VERSION);
 	PrintToConsole(client, "Plugin URL........: %s", URL);
 	PrintToConsole(client, "List of cvars: ");
+	PrintToConsole(client, "sm_disableattack_version");
 	PrintToConsole(client, "sm_disableattack_enable <1|0>");
 	PrintToConsole(client, "sm_disableattack_primary <1|0>");
 	PrintToConsole(client, "sm_disableattack_Secondary <1|0>");
